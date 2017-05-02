@@ -1,0 +1,12 @@
+# Virtualenv
+.Python
+bin
+lib
+include
+*.py[cod]
+
+# macOS
+.DS_Store
+
+# specific bother
+/tmp/

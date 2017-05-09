@@ -3,8 +3,8 @@ from datetime import datetime
 from flask import render_template, flash, redirect, send_from_directory, session, url_for, request, g
 from flask_login import login_user, logout_user, current_user, login_required
 from app import app, db, lm, oid
-from .forms import LoginForm, EditForm
-from .models import User
+from .forms import LoginForm, EditForm, PostForm
+from .models import User, Post
 
 @lm.user_loader
 def load_user(id):
@@ -18,25 +18,21 @@ def before_request():
         db.session.add(g.user)
         db.session.commit()
 
-@app.route('/')
-@app.route('/index')
+@app.route('/', methods=['GET', 'POST'])
+@app.route('/index', methods=['GET', 'POST'])
 @login_required
 def index():
-    #user = {'nickname': 'craigz'}  # fake user
-    user = g.user
-    posts = [  # fake array of posts
-        {
-            'author': {'nickname': 'john'},
-            'body': 'beautiful day in portland!'
-        },
-        {
-            'author': {'nickname': 'susan'},
-            'body': 'the avengers movie was so cool!'
-        }
-    ]
+    Form = PostForm()
+    if Form.validate_on_submit():
+        post = Post(body=Form.post.data, timestamp=datetime.utcnow(), author=g.user)
+        db.session.add(post)
+        db.session.commit()
+        flash('your post is now live!')
+        return redirect(url_for('index'))
+    posts = g.user.followed_posts().all()
     return render_template('index.html',
                            title='fuck0',
-                           user=user,
+                           form=Form,
                            posts=posts)
 
 @app.route('/login', methods=['GET', 'POST'])

@@ -5,6 +5,7 @@ from flask_login import login_user, logout_user, current_user, login_required
 from app import app, db, lm, oid
 from .forms import LoginForm, EditForm, PostForm
 from .models import User, Post
+from config import POSTS_PER_PAGE
 
 @lm.user_loader
 def load_user(id):
@@ -20,19 +21,21 @@ def before_request():
 
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/index', methods=['GET', 'POST'])
+@app.route('/index/<int:page>', methods=['GET', 'POST'])
 @login_required
-def index():
-    Form = PostForm()
-    if Form.validate_on_submit():
-        post = Post(body=Form.post.data, timestamp=datetime.utcnow(), author=g.user)
+def index(page=1):
+    form = PostForm()
+    if form.validate_on_submit():
+        post = Post(body=form.post.data, timestamp=datetime.utcnow(), author=g.user)
         db.session.add(post)
         db.session.commit()
         flash('your post is now live!')
         return redirect(url_for('index'))
-    posts = g.user.followed_posts().all()
+    #posts = g.user.followed_posts().all()
+    posts = g.user.followed_posts().paginate(page, POSTS_PER_PAGE, False).items
     return render_template('index.html',
                            title='fuck0',
-                           form=Form,
+                           form=form,
                            posts=posts)
 
 @app.route('/login', methods=['GET', 'POST'])
